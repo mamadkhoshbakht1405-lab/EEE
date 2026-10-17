@@ -1,21 +1,32 @@
-# 3x-ui روی Railway (نسخه v3.10.2 – نسخه‌ی سبک)
+# 3x-ui روی Railway (نسخه v3.10.2) – یک دامنه برای پنل + همه‌ی اینباندها
 
-## مراحل
-1. این پوشه رو تو یه ریپوی GitHub آپلود کن (یا ریپوی قبلی رو جایگزین کن) و تو Railway ازش Deploy کن.
-2. **همه‌ی Variableهای قبلی رو پاک کن** (`XUI_BIN_FOLDER`, `XUI_DB_FOLDER`, `XUI_LOG_FOLDER` و ...). مقادیر درست داخل Dockerfile هست و Variableهای Railway بر اونا غالب میشن.
-3. سرویس → Settings → **Volumes** → یه Volume بساز با Mount Path: `/etc/x-ui`
-   (اگه ولوم قدیمی `ee-volume` رو داری حذف و دوباره بساز.)
-4. سرویس → Settings → Networking → **Generate Domain**.
-   پورتی که می‌پرسه رو همون چیزی بذار که Railway خودش پیشنهاد می‌ده (متغیر `PORT`). دستی 2053 نذار.
-5. Deploy. بعد از بالا اومدن، تو **Deploy Logs** بلوک «first-run credentials» رو پیدا کن: آدرس کامل پنل (با مسیر مخفی)، یوزر و پسورد اونجاست.
+داخل کانتینر یه nginx روی پورت `$PORT` گوش می‌ده و ترافیک رو تقسیم می‌کنه:
+- مسیر پنل (و هر چیز دیگه) ← پنل 3x-ui (پورت داخلی 12053)
+- `/ws443`  ← اینباند روی پورت داخلی 10443
+- `/ws8443` ← اینباند روی پورت داخلی 18443
 
-## Variableهای اختیاری
-| نام | کاربرد |
-|---|---|
-| `PANEL_USERNAME` / `PANEL_PASSWORD` | یوزر/پسورد دلخواه (وگرنه رندوم ساخته میشه) |
-| `PANEL_BASE_PATH` | مسیر پنل، مثلاً `mypanel` (وگرنه رندوم) |
+پس با **یک** Generate Domain همه‌چیز کار می‌کنه.
+
+## Variables
+| نام | مقدار | توضیح |
+|---|---|---|
+| `PORT` | `2053` | پورت عمومی (باید با پورت دامنه یکی باشه) |
+| `PANEL_USERNAME` | دلخواه | اختیاری (وگرنه رندوم) |
+| `PANEL_PASSWORD` | دلخواه | اختیاری (وگرنه رندوم) |
+| `PANEL_BASE_PATH` | `mypanel` | مسیر پنل، اختیاری |
+| `WS_ROUTES` | `/ws443=10443,/ws8443=18443` | اختیاری. فرمت: `path=پورت-داخلی` با کاما جدا کن |
+| `PANEL_INTERNAL_PORT` | `12053` | اختیاری |
+
+متغیرهای `XUI_*` رو ست نکن.
+
+## ساخت اینباند (داخل پنل)
+Protocol: VLESS | Port: `10443` | Transport: WebSocket | Path: `/ws443` | Security: none
+اینباند دوم: Port `18443` و Path `/ws8443`.
+
+## کلاینت
+Address: دامنه‌ی Railway | Port: 443 | TLS: روشن | SNI/Host: دامنه | Network: ws | Path: `/ws443` یا `/ws8443`
 
 ## نکات
-- فقط پنل از طریق دامنه‌ی HTTP Railway باز میشه. برای inboundهای VPN باید تو Networking یه **TCP Proxy** برای پورت inbound اضافه کنی.
-- fail2ban (محدودیت IP) روی Railway کار نمی‌کنه و غیرفعاله.
-- بدون Volume، با هر Deploy دیتابیس پاک میشه.
+- Volume با mount path `/etc/x-ui` الزامیه.
+- فقط پروتکل‌های روی HTTP (WS) از این مسیر کار می‌کنن؛ Reality و TCP خام نه.
+- مسیر اینباند نباید با `PANEL_BASE_PATH` یکی باشه.

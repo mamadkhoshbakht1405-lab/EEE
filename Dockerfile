@@ -46,7 +46,8 @@ RUN apk add --no-cache --update \
   tzdata \
   bash \
   curl \
-  openssl
+  openssl \
+  nginx
 
 COPY --from=builder /app/build/ /app/
 COPY --from=builder /app/RailwayEntrypoint.sh /app/
@@ -61,6 +62,8 @@ ENV XUI_DB_FOLDER="/etc/x-ui"
 ENV XUI_LOG_FOLDER="/var/log/x-ui"
 ENV XUI_DB_TYPE=""
 ENV XUI_DB_DSN=""
+# Single public port (Railway $PORT): nginx routes panel + inbounds
+EXPOSE 2053
 # NOTE: no VOLUME instruction on purpose (Railway rejects it).
 # Attach a Railway Volume with mount path /etc/x-ui instead.
 CMD [ "./x-ui" ]
