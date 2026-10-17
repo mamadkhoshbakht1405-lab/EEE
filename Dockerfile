@@ -28,7 +28,10 @@ COPY --from=frontend /src/internal/web/dist ./internal/web/dist
 ENV CGO_ENABLED=1
 ENV CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
 RUN go build -ldflags "-w -s" -o build/x-ui main.go
-RUN ./DockerInit.sh "$TARGETARCH"
+# Strip Windows CRLF + restore exec bit (lost when uploading from Windows/GitHub)
+RUN sed -i 's/\r$//' DockerInit.sh RailwayEntrypoint.sh \
+  && chmod +x DockerInit.sh RailwayEntrypoint.sh \
+  && sh ./DockerInit.sh "$TARGETARCH"
 
 # ========================================================
 # Stage: Final Image of 3x-ui (Railway edition)
